@@ -49,7 +49,7 @@ ALGORITHM=HS256
 DATABASE_NAME='UserDatabase'
 USER_COLLECTION_NAME='User'
 EMBEDDING_COLLECTION_NAME='Embedding'
-MONGODB_URL_KEY=
+MONGODB_URL_KEY='mongodb://localhost:27017/'
 ```
 
 ### Step 6-: Run the application server
