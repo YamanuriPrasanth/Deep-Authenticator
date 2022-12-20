@@ -1,9 +1,3 @@
 env/
 .git
 .gitignore
-.github
-docs
-infrastructure
-face.drawio
-LICENSE
-README.md

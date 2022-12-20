@@ -42,20 +42,20 @@ class LoginValidation:
                 msg += "Email Id is required"
             if not self.password:
                 msg += "Password is required"
-            if not self.is_email_valid():
+            if not self.isEmailValid():
                 msg += "Invalid Email Id"
             return msg
         except Exception as e:
             raise e
 
-    def is_email_valid(self) -> bool:
+    def isEmailValid(self) -> bool:
         if re.fullmatch(self.regex, self.email_id):
             return True
         else:
             return False
 
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Verify hashed password and plain password.
+    def verifyPassword(self, plain_password: str, hashed_password: str) -> bool:
+        """_summary_
 
         Args:
             plain_password (str): _description_
@@ -66,15 +66,16 @@ class LoginValidation:
         """
         return bcrypt_context.verify(plain_password, hashed_password)
 
-    def validate_login(self) -> dict:
+    def validateLogin(self) -> dict:
 
         """This checks all the validation conditions for the user registration
         """
+        print(self.validate())
         if len(self.validate()) != 0:
             return {"status": False, "msg": self.validate()}
         return {"status": True}
 
-    def authenticate_user_login(self) -> Optional[str]:
+    def authenticateUserLogin(self) -> Optional[str]:
         """_summary_: This authenticates the user and returns the token
         if the user is authenticated
 
@@ -83,16 +84,16 @@ class LoginValidation:
             password (str): _description_
         """
         try:
-
+            print(self.validateLogin())
             logging.info("Authenticating the user details.....")
-            if self.validate_login()["status"]:
+            if self.validateLogin()["status"]:
                 userdata = UserData()
                 logging.info("Fetching the user details from the database.....")
                 user_login_val = userdata.get_user({"email_id": self.email_id})
                 if not user_login_val:
                     logging.info("User not found while Login")
                     return False
-                if not self.verify_password(self.password, user_login_val["password"]):
+                if not self.verifyPassword(self.password, user_login_val["password"]):
                     logging.info("Password is incorrect")
                     return False
                 logging.info("User authenticated successfully....")
@@ -146,23 +147,23 @@ class RegisterValidation:
             if self.user.password2 == None:
                 msg += "Confirm Password is required"
 
-            if not self.is_email_valid():
+            if not self.isEmailValid():
                 msg += "Email is not valid"
 
-            if not self.is_password_valid():
+            if not self.isPasswordValid():
                 msg += "Length of the pass`word should be between 8 and 16"
 
-            if not self.is_password_match():
+            if not self.isPasswordMatch():
                 msg += "Password does not match"
 
-            if not self.is_details_exists():
+            if not self.isDetailsExists():
                 msg += "User already exists"
 
             return msg
         except Exception as e:
             raise e
 
-    def is_email_valid(self) -> bool:
+    def isEmailValid(self) -> bool:
         """_summary_: This validates the email id
 
         Returns:
@@ -173,19 +174,19 @@ class RegisterValidation:
         else:
             return False
 
-    def is_password_valid(self) -> bool:
+    def isPasswordValid(self) -> bool:
         if len(self.user.password1) >= 8 and len(self.user.password2) <= 16:
             return True
         else:
             return False
 
-    def is_password_match(self) -> bool:
+    def isPasswordMatch(self) -> bool:
         if self.user.password1 == self.user.password2:
             return True
         else:
             return False
 
-    def is_details_exists(self) -> bool:
+    def isDetailsExists(self) -> bool:
         username_val = self.userdata.get_user({"username": self.user.username})
         emailid_val = self.userdata.get_user({"email_id": self.user.email_id})
         uuid_val = self.userdata.get_user({"UUID": self.uuid})
@@ -194,10 +195,10 @@ class RegisterValidation:
         return False
 
     @staticmethod
-    def get_password_hash(password: str) -> str:
+    def getPasswordHash(password: str) -> str:
         return bcrypt_context.hash(password)
 
-    def validate_registration(self) -> bool:
+    def validateRegistration(self) -> bool:
 
         """This checks all the validation conditions for the user registration
         """
@@ -205,7 +206,7 @@ class RegisterValidation:
             return {"status": False, "msg": self.validate()}
         return {"status": True}
 
-    def authenticate_user_registration(self) -> bool:
+    def saveUser(self) -> bool:
         """_summary_: This saves the user details in the database
         only after validating the user details
 
@@ -214,9 +215,9 @@ class RegisterValidation:
         """
         try:
             logging.info("Validating the user details while Registration.....")
-            if self.validate_registration()["status"]:
+            if self.validateRegistration()["status"]:
                 logging.info("Generating the password hash.....")
-                hashed_password: str = self.get_password_hash(self.user.password1)
+                hashed_password: str = self.getPasswordHash(self.user.password1)
                 user_data_dict: dict = {
                     "Name": self.user.Name,
                     "username": self.user.username,

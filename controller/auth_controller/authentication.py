@@ -1,35 +1,50 @@
-from datetime import datetime, timedelta
-from typing import Optional
-
-from fastapi import APIRouter, HTTPException, Request, Response, status
-from jose import JWTError, jwt
+import os
+from starlette.responses import JSONResponse, HTMLResponse, RedirectResponse
+from fastapi import HTTPException, status, APIRouter, Request, Response
 from pydantic import BaseModel
-from starlette.responses import JSONResponse, RedirectResponse
+from typing import Optional
+from datetime import datetime
+from datetime import timedelta
+from jose import jwt, JWTError
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
-from face_auth.business_val.user_val import LoginValidation, RegisterValidation
-from face_auth.constant.auth_constant import ALGORITHM, SECRET_KEY
 from face_auth.entity.user import User
+from face_auth.business_val.user_val import RegisterValidation, LoginValidation
+from face_auth.constant.auth_constant import SECRET_KEY, ALGORITHM
 
 
-class Login(BaseModel):
-    """Base model for login
-    """
+templates = Jinja2Templates(directory= os.path.join(os.getcwd(), "templates"))
 
-    email_id: str
-    password: str
+class LoginForm:
+    def __init__(self, request: Request):
+        self.request: Request = request
+        self.email_id: Optional[str] = None
+        self.password: Optional[str] = None
+    
+    async def create_oauth_form(self):
+        form = await self.request.form()
+        self.email_id = form.get("email")
+        self.password = form.get("password")
 
-
-class Register(BaseModel):
-    """
-    Base model for register
-    """
-
-    Name: str
-    username: str
-    email_id: str
-    ph_no: int
-    password1: str
-    password2: str
+class RegisterForm:
+    def __init__(self, request: Request):
+        self.request: Request = request
+        self.name: Optional[str] = None
+        self.username: Optional[str] = None
+        self.email_id: Optional[str] = None
+        self.ph_no: Optional[int] = None
+        self.password1: Optional[str] = None
+        self.password2: Optional[str] = None
+        
+    async def create_oauth_form(self):
+        form = await self.request.form()
+        self.name = form.get("name")
+        self.username = form.get("username")
+        self.email_id = form.get("email")
+        self.ph_no = form.get("ph_no")
+        self.password1 = form.get("password1")
+        self.password2 = form.get("password2")
 
 
 router = APIRouter(
@@ -110,15 +125,19 @@ def create_access_token(
 
 @router.post("/token")
 async def login_for_access_token(response: Response, login) -> dict:
-    """Set the access token
+    """_summary_
+
+    Args:
+        response (Response): _description_
+        login (_type_): _description_
 
     Returns:
-        dict: response
+        dict: _description_
     """
 
     try:
-        user_validation = LoginValidation(login.email_id, login.password)
-        user: Optional[str] = user_validation.authenticate_user_login()
+        userValidation = LoginValidation(login['email_id'], login['password'])
+        user: Optional[str] = userValidation.authenticateUserLogin()
         if not user:
             return {"status": False, "uuid": None, "response": response}
         token_expires = timedelta(minutes=15)
@@ -135,55 +154,67 @@ async def login_for_access_token(response: Response, login) -> dict:
         return {"status": False, "uuid": None, "response": response}
 
 
-@router.get("/", response_class=JSONResponse)
+@router.get("/", response_class=HTMLResponse)
 async def authentication_page(request: Request):
-    """Login GET route
+    """_summary_
+
+    Args:
+        request (Request): _description_
+
+    Raises:
+        e: Exception
 
     Returns:
-        _type_: JSONResponse
+        Response: _description_
     """
     try:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"message": "Authentication Page"}
-        )
+        return templates.TemplateResponse("login.html", 
+        context={"request":request,"msg":"login_page","status_code":status.HTTP_200_OK})
     except Exception as e:
         raise e
 
 
-@router.post("/", response_class=JSONResponse)
-async def login(request: Request, login: Login):
-    """Route for User Login
+@router.post("/", response_class=HTMLResponse)
+async def login(request: Request):
+    """_summary_
+
+    Args:
+        request (Request): _description_
+        login (Login): _description_
 
     Returns:
-        _type_: Login Response
+        _type_: _description_
     """
     try:
-        # response = RedirectResponse(url="/application/", status_code=status.HTTP_302_FOUND)
+        form = LoginForm(request)
+        await form.create_oauth_form()
+        login = {
+            "email_id": form.email_id,
+            "password": form.password
+        }
+
         msg = "Login Successful"
-        response = JSONResponse(
-            status_code=status.HTTP_200_OK, content={"message": msg}
-        )
+        response = RedirectResponse(url="/application/", status_code=status.HTTP_302_FOUND)
+
         token_response = await login_for_access_token(response=response, login=login)
+
         if not token_response["status"]:
             msg = "Incorrect Username and password"
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"status": False, "message": msg},
+            return templates.TemplateResponse("login.html", 
+            context={"request": request, "msg": msg,"status_code":status.HTTP_404_NOT_FOUND},
+            status_code=status.HTTP_401_UNAUTHORIZED,
             )
-            # return RedirectResponse(url="/", status_code=status.HTTP_401_UNAUTHORIZED, headers={"msg": msg})
-        # msg = "Login Successfull"
-        # response = JSONResponse(status_code=status.HTTP_200_OK, content={"message": msg}, headers={"uuid": "abda"})
+       
         response.headers["uuid"] = token_response["uuid"]
 
         return response
 
     except HTTPException:
         msg = "UnKnown Error"
-        return JSONResponse(
+        return templates.TemplateResponse("login.html",
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"status": False, "message": msg},
+            content={"request":request ,"status": False, "message": msg},
         )
-        # return RedirectResponse(url="/", status_code=status.HTTP_401_UNAUTHORIZED, headers={"msg": msg})
     except Exception as e:
         msg = "User NOT Found"
         response = JSONResponse(
@@ -193,23 +224,30 @@ async def login(request: Request, login: Login):
         return response
 
 
-@router.get("/register", response_class=JSONResponse)
+@router.get("/register", response_class=HTMLResponse)
 async def authentication_page(request: Request):
-    """Route for User Registration
+    """_summary_
+
+    Args:
+        request (Request): _description_
+
+    Raises:
+        e: _description_
 
     Returns:
-        _type_: Register Response
+        _type_: _description_
     """
     try:
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"message": "Registration Page"}
+        return templates.TemplateResponse("login.html",
+            status_code=status.HTTP_200_OK, 
+            context={"request": request,"message": "Registration Page"}
         )
     except Exception as e:
         raise e
 
 
-@router.post("/register", response_class=JSONResponse)
-async def register_user(request: Request, register: Register):
+@router.post("/register", response_class=HTMLResponse)
+async def register_user(request: Request):
 
     """Post request to register a user
 
@@ -229,7 +267,10 @@ async def register_user(request: Request, register: Register):
         _type_: Will redirect to the embedding generation route and return the UUID of user
     """
     try:
-        name = register.Name
+        register = RegisterForm(request)
+        await register.create_oauth_form()
+
+        name = register.name
         username = register.username
         password1 = register.password1
         password2 = register.password2
@@ -241,45 +282,54 @@ async def register_user(request: Request, register: Register):
         request.session["uuid"] = user.uuid_
 
         # Validation of the user input data to check the format of the data
-        user_registration = RegisterValidation(user)
+        userValidation = RegisterValidation(user)
 
-        validate_regitration = user_registration.validate_registration()
+        validate_regitration = userValidation.validateRegistration()
+
         if not validate_regitration["status"]:
             msg = validate_regitration["msg"]
-            response = JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"status": False, "message": msg},
+            response = templates.TemplateResponse("login.html",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            context={"request": request,"msg":msg,"status_code":status.HTTP_404_NOT_FOUND}
             )
             return response
 
         # Save user if the validation is successful
-        validation_status = user_registration.authenticate_user_registration()
+        validation_status = userValidation.saveUser()
 
         msg = "Registration Successful...Please Login to continue"
-        response = JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"status": True, "message": validation_status["msg"]},
-            headers={"uuid": user.uuid_},
-        )
+        response = RedirectResponse(url="/application/register_embedding",
+         status_code=status.HTTP_302_FOUND,
+         headers={"uuid": user.uuid_})
         return response
+        
+        
     except Exception as e:
-        raise e
+        response = templates.TemplateResponse("error.html",
+                status_code=status.HTTP_404_NOT_FOUND,
+                context={"request": request,"status": False},
+            )
+        return response
 
 
 @router.get("/logout")
 async def logout(request: Request):
-    """Route for User Logout
+    """_summary_
+
+    Args:
+        request (Request): _description_
+
+    Raises:
+        e: _description_
 
     Returns:
-        _type_: Logout Response
+        _type_: _description_
     """
     try:
         msg = "You have been logged out"
         response =  RedirectResponse(url="/auth/", status_code=status.HTTP_302_FOUND, headers={"msg": msg})
+        # response =  templates.TemplateResponse("login.html", {"request": request, "msg": msg})
         response.delete_cookie(key="access_token")
-        response = JSONResponse(
-            status_code=status.HTTP_200_OK, content={"status": True, "message": msg}
-        )
         return response
     except Exception as e:
         raise e

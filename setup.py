@@ -1,4 +1,5 @@
-from setuptools import find_packages, setup
+from setuptools import setup, find_packages
+from typing import List
 
 # Declaring variables for setup functions
 PROJECT_NAME = "Face Authenticator"
