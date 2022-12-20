@@ -1,0 +1,25 @@
+Login server: faceapp1.azurecr.io
+Username : faceapp1
+Password : 4Gpu7zRv7hkGTimj0/yX95CQRDq/ZG1u7rMzeZvaKS+ACRAx5S2R
+
+
+
+docker login faceapp1.azurecr.io
+
+docker build -t faceapp1 .
+
+docker tag faceapp1 faceapp1.azurecr.io/faceapp1
+docker push faceapp1.azurecr.io/faceapp1
+
+WEBSITES_PORT 8000
+WEBSITES_CONTAINER_START_TIME_LIMIT 30
+
+f04d2ae5-9ccb-4a7e-861c-4d390eb82e9f
+faceapp
+
+
+   az ad sp create-for-rbac --name "myApp" --role contributor \
+                            --scopes /subscriptions/f04d2ae5-9ccb-4a7e-861c-4d390eb82e9f/resourceGroups/faceapp\
+                            --sdk-auth
+                            
+ 
