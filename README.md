@@ -2,7 +2,7 @@
 
 This is a modern Face Authentication System which includes state-of-art algorithms to detect face and generate face embedding. This system contains endpoints which can be integrated to any device depending on the requirements. 
 
-## Project Archietecture
+## Project Architecture
 <img width="844" alt="image" src="https://user-images.githubusercontent.com/57321948/195135349-9888d9ea-af5d-4ee2-8aa4-1e57342add05.png">
 
 ## Run the Application
@@ -10,17 +10,17 @@ Before we run the project, make sure that you are having MongoDB in your local s
 
 ### Step 1-: Clone the Repository
 ```
-git clone https://github.com/Deep-Learning-01/Deep-Authenticator.git
+git clone  https://github.com/YamanuriPrasanth/Deep-Authenticator.git
 ```
 
 ### Step 2-: Creat conda environment
 ```
-conda create -p ./env python=3.8.13 -y
+conda create -n face_auth python=3.8.13 -y
 ```
 
 ### Step 3-: Activate Conda environment
 ```
-conda activate ./env
+conda activate face_auth
 ```
 
 ### Step 4-: Install requirements
